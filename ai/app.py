@@ -20,18 +20,8 @@ client = MongoClient(MONGO_URI)
 db = client["ecochef_db"]
 recipes_collection = db["Recipes"]
 ingredients_collection = db["Ingredients"]
-recipe_ingredient_collection = db["Recipe_Ingredient"]  # Corrected collection name
+recipe_ingredient_collection = db["Recipe_Ingredient"]
 user_ingredients_collection = db["useringredients"]
-
-# Load recipe data
-def load_recipes():
-    recipes = list(recipes_collection.find())
-    for recipe in recipes:
-        # Fetch ingredient names by joining Recipe_Ingredient with Ingredients
-        ingredient_ids = [ing['ingredient_id'] for ing in recipe_ingredient_collection.find({'recipe_id': recipe['recipe_id']})]
-        ingredient_names = [ing['name'] for ing in ingredients_collection.find({'ingredient_id': {'$in': ingredient_ids}})]
-        recipe['ingredients_text'] = ' '.join(ingredient_names)
-    return recipes
 
 # Preprocess text for TF-IDF
 def preprocess_text(text):
@@ -39,8 +29,12 @@ def preprocess_text(text):
     tokens = word_tokenize(text.lower())
     return ' '.join([word for word in tokens if word.isalnum() and word not in stop_words])
 
-# Build TF-IDF matrix
-recipes = load_recipes()
+# Load and cache recipe data on startup
+recipes = list(recipes_collection.find())
+for recipe in recipes:
+    ingredient_ids = [ing['ingredient_id'] for ing in recipe_ingredient_collection.find({'recipe_id': recipe['recipe_id']})]
+    ingredient_names = [ing['name'] for ing in ingredients_collection.find({'ingredient_id': {'$in': ingredient_ids}})]
+    recipe['ingredients_text'] = ' '.join(ingredient_names)
 corpus = [preprocess_text(recipe['ingredients_text']) for recipe in recipes]
 tfidf_vectorizer = TfidfVectorizer()
 tfidf_matrix = tfidf_vectorizer.fit_transform(corpus)
@@ -72,4 +66,4 @@ def recommend_recipes():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000, host='0.0.0.0')
+    app.run(host='0.0.0.0', port=5000)
