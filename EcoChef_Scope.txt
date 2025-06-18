@@ -1,0 +1,6 @@
+Tech Stack:
+- Frontend: React.js, Tailwind CSS
+- Backend: Node.js, Express
+- AI: Python, Flask, scikit-learn, TensorFlow
+- Database: MongoDB
+- Hosting: Vercel (frontend), Heroku (backend)
