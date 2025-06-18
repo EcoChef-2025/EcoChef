@@ -1,2 +1,5 @@
 edamam_credentials.txt
 mongodb_connection.txt
+.env
+node_modules
+venv
