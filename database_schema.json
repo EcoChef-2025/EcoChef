@@ -1,0 +1,69 @@
+{
+  "Users": {
+    "user_id": "String (unique)",
+    "name": "String",
+    "email": "String",
+    "password_hash": "String",
+    "dietary_preferences": ["String"],
+    "created_at": "Date"
+  },
+  "Ingredients": {
+    "ingredient_id": "String (unique)",
+    "name": "String",
+    "category": "String",
+    "nutrition_info": {
+      "calories": "Number",
+      "protein": "Number"
+    }
+  },
+  "Recipes": {
+    "recipe_id": "String (unique)",
+    "title": "String",
+    "description": "String",
+    "prep_time": "Number",
+    "cook_time": "Number",
+    "steps": ["String"],
+    "cuisine_type": "String",
+    "dietary_tags": ["String"],
+    "image_url": "String"
+  },
+  "Recipe_Ingredient": {
+    "id": "String (unique)",
+    "recipe_id": "String",
+    "ingredient_id": "String",
+    "quantity": "Number",
+    "unit": "String"
+  },
+  "User_Ingredients": {
+    "id": "String (unique)",
+    "user_id": "String",
+    "ingredient_id": "String",
+    "quantity": "Number",
+    "added_at": "Date"
+  },
+  "Preferences": {
+    "id": "String (unique)",
+    "user_id": "String",
+    "recipe_id": "String",
+    "liked": "Boolean",
+    "rating": "Number",
+    "timestamp": "Date"
+  },
+  "Feedback": {
+    "feedback_id": "String (unique)",
+    "user_id": "String",
+    "recipe_id": "String",
+    "comment": "String",
+    "rating": "Number",
+    "submitted_at": "Date"
+  },
+   "Indexes": {
+    "Users": ["user_id"],
+    "Ingredients": ["ingredient_id"],
+    "Recipes": ["recipe_id"],
+    "Recipe_Ingredient": ["recipe_id", "ingredient_id"],
+    "User_Ingredients": ["user_id", "ingredient_id"],
+    "Preferences": ["user_id", "recipe_id"],
+    "Feedback": ["user_id", "recipe_id"]
+  }
+}
