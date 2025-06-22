@@ -3,7 +3,7 @@ const express = require('express');
 const https = require('https');
 const fs = require('fs');
 const mongoose = require('mongoose');
-const cors = require('cors');
+const cors = require('cors'); // Add this
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('./models/User');
@@ -22,7 +22,7 @@ const limiter = rateLimit({
 });
 
 app.use(limiter);
-app.use(cors());
+app.use(cors()); // Add this to allow all origins (update for security later)
 app.use(express.json());
 
 if (!process.env.MONGODB_URI) {
