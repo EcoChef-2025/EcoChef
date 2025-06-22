@@ -3,7 +3,7 @@ const express = require('express');
 const https = require('https');
 const fs = require('fs');
 const mongoose = require('mongoose');
-const cors = require('cors'); // Add this
+const cors = require('cors'); 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('./models/User');
@@ -16,25 +16,38 @@ const rateLimit = require('express-rate-limit');
 
 const app = express();
 
+// CORS Configuration for development only
+const corsOptions = {
+  origin: 'http://localhost:5173', 
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100 // Limit each IP to 100 requests per windowMs
 });
 
+// Middleware
 app.use(limiter);
-app.use(cors()); // Add this to allow all origins (update for security later)
+app.use(cors(corsOptions)); 
 app.use(express.json());
 
+// Database Connection
 if (!process.env.MONGODB_URI) {
   console.error('MONGODB_URI is not defined. Check your .env file.');
   process.exit(1);
 }
+
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('Connected to MongoDB'))
   .catch(err => console.error('MongoDB connection error:', err));
 
-console.log('JWT_SECRET:', process.env.JWT_SECRET);
+console.log('JWT_SECRET:', process.env.JWT_SECRET ? 'Set' : 'Not set');
 
+// Authentication Middlewares
 const authenticateToken = (req, res, next) => {
   const token = req.headers['authorization']?.split(' ')[1];
   if (!token) return res.status(401).json({ error: 'Access denied, no token provided' });
@@ -60,7 +73,7 @@ const cache = new NodeCache({
   checkperiod: 120
 });
 
-// Register endpoint with admin option
+// Routes
 app.post('/api/register', async (req, res) => {
   try {
     const { name, email, password, isAdmin } = req.body;
@@ -68,7 +81,6 @@ app.post('/api/register', async (req, res) => {
     const user = new User({ name, email, passwordHash, dietaryPreferences: [], isAdmin: !!isAdmin });
     await user.save();
     const token = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    console.log('Generated token:', token);
     res.status(201).json({ message: 'User registered successfully', token });
   } catch (error) {
     console.error('Register error:', error.message);
@@ -76,7 +88,6 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// Login endpoint
 app.post('/api/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -85,15 +96,22 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     const token = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    console.log('Generated token:', token);
-    res.status(200).json({ message: 'Login successful', token, user: { id: user._id, name: user.name, email: user.email, isAdmin: user.isAdmin } });
+    res.status(200).json({ 
+      message: 'Login successful', 
+      token, 
+      user: { 
+        id: user._id, 
+        name: user.name, 
+        email: user.email, 
+        isAdmin: user.isAdmin 
+      } 
+    });
   } catch (error) {
     console.error('Login error:', error.message);
     res.status(400).json({ error: error.message });
   }
 });
 
-// Ingredient input endpoint
 app.post('/api/ingredients', authenticateToken, async (req, res) => {
   try {
     const { ingredients } = req.body;
@@ -117,7 +135,6 @@ app.post('/api/ingredients', authenticateToken, async (req, res) => {
   }
 });
 
-// Recommendations endpoint
 app.get('/api/recommendations', authenticateToken, async (req, res) => {
   console.log('Recommendations route hit for userId:', req.user.id);
   try {
@@ -130,7 +147,6 @@ app.get('/api/recommendations', authenticateToken, async (req, res) => {
   }
 });
 
-// Recipe API endpoint
 app.get('/api/recipes', authenticateToken, async (req, res) => {
   try {
     const { ingredients, health } = req.query;
@@ -173,7 +189,6 @@ app.get('/api/recipes', authenticateToken, async (req, res) => {
   }
 });
 
-// Feedback endpoint
 app.post('/api/feedback', [
   authenticateToken,
   body('recipeId').trim().escape(),
@@ -256,7 +271,7 @@ app.get('/api/admin/feedback', authenticateAdmin, async (req, res) => {
   }
 });
 
-// Simple hash function for recipe_id
+// Helper function
 function hash(str) {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
@@ -266,7 +281,7 @@ function hash(str) {
   return hash;
 }
 
-// Generate self-signed certificate for local HTTPS (development only)
+// HTTPS Server Setup
 const options = {
   key: fs.readFileSync('key.pem'),
   cert: fs.readFileSync('cert.pem')
@@ -276,8 +291,8 @@ app.get('/', (req, res) => {
   res.send('EcoChef Backend is running over HTTPS!');
 });
 
-const PORT = process.env.PORT || 3000; // Define PORT here
-// Start HTTPS server
+const PORT = process.env.PORT || 3000;
 https.createServer(options, app).listen(PORT, () => {
   console.log(`HTTPS Server running on port ${PORT}`);
+  console.log(`CORS enabled for: http://localhost:5173`);
 });
